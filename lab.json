@@ -1,0 +1,19 @@
+{
+  "slug": "time-horizon-audit",
+  "title": "Calibrate the Horizon",
+  "tagline": "Bet on which AI time-horizon jump means a bigger leap in capability.",
+  "kind": "demo",
+  "tags": ["game", "statistics", "research"],
+  "date": "2026-10-10",
+  "builtBy": "Virtual Company",
+  "entry": "demo/index.html",
+  "paper": {
+    "title": "On the estimation and validity of AI time horizons—a statistical look at the METR plot",
+    "arxiv": "2610.12466",
+    "authors": ["Drew T. Nguyen", "William Fithian"]
+  },
+  "novelty": "No known implementation (not verified): a short betting game that turns the paper's non-linear time-to-difficulty insight into a repeatable comparison challenge. This build uses an explicitly illustrative curve, not the paper's fitted estimates.",
+  "description": "Compare two human task-time jumps, bet which represents more change in AI task difficulty, then see the reveal and your score streak.",
+  "howItWorks": "A small, hand-shaped monotone curve is nearly flat between 2 and 30 minutes and rises more quickly outside that zone. The game measures each selected jump along that illustrative curve and awards points for choosing the larger change. The curve is not fitted to METR data and is not a reproduction of Model 2.",
+  "controls": "Adjust the start and end sliders for jumps A and B, choose which jump is larger, and use Next round or Reset game. Each bet submits a fixed 75% forecast that is scored with log loss and Brier score."
+}

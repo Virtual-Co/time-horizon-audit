@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Calibrate the Horizon</title>
+  <style>
+    :root { color-scheme: dark; --ink: #f5f3eb; --muted: #a9b2bc; --line: #394451; --panel: #171f2a; --lime: #d0fa83; --cyan: #80d7e6; --orange: #ffb36f; --red: #ff8e87; --bg: #0c1119; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: var(--ink); background: radial-gradient(ellipse at 50% -20%, #263448 0, var(--bg) 58%); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    button, input { font: inherit; }
+    button { min-height: 46px; border: 1px solid #576575; border-radius: 12px; padding: 9px 16px; color: var(--ink); background: #202c3a; cursor: pointer; transition: transform .14s ease, background .14s ease, border-color .14s ease; }
+    button:hover { background: #2b3b4c; border-color: #8292a4; transform: translateY(-1px); }
+    button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+    button.primary { color: #132012; background: var(--lime); border-color: var(--lime); font-weight: 800; }
+    button.primary:hover { background: #defca8; }
+    button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    main { width: min(1080px, calc(100% - 32px)); margin: auto; padding: 34px 0 42px; }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 22px; margin-bottom: 22px; }
+    .eyebrow { color: var(--lime); font-size: .75rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 5px 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1; letter-spacing: -.055em; }
+    .lede { max-width: 650px; margin: 0; color: #c3cbd2; font-size: 1.03rem; }
+    .stats { display: flex; gap: 9px; flex: none; }
+    .stat { min-width: 95px; border: 1px solid var(--line); border-radius: 13px; padding: 8px 12px; background: #111923cc; text-align: center; }
+    .stat small { display: block; color: var(--muted); font-size: .68rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+    .stat b { font-size: 1.16rem; font-variant-numeric: tabular-nums; }
+    .game { overflow: hidden; border: 1px solid #384758; border-radius: 22px; background: linear-gradient(150deg, #1b2633, #121a24 65%); box-shadow: 0 24px 70px #0005; }
+    .game-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px 14px; }
+    .round-label { color: var(--cyan); font-size: .77rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h2 { margin: 4px 0 0; font-size: clamp(1.15rem, 3vw, 1.45rem); line-height: 1.2; }
+    .seed { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .arena { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 22px; }
+    .jump { --accent: var(--cyan); min-width: 0; border: 1px solid color-mix(in srgb, var(--accent), transparent 63%); border-radius: 17px; padding: 16px; background: #0f1721a8; }
+    .jump.b { --accent: var(--orange); }
+    .jump-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+    .jump-top strong { color: var(--accent); font-size: .79rem; letter-spacing: .12em; text-transform: uppercase; }
+    .delta { color: #fff; font-size: .84rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .range { margin: 12px 0 0; }
+    .range-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 2px; color: var(--muted); font-size: .78rem; }
+    output { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+    input[type="range"] { display: block; width: 100%; min-height: 28px; margin: 0; accent-color: var(--accent); touch-action: pan-y; }
+    .scale-hint { margin: 5px 0 0; color: #818d9b; font-size: .7rem; }
+    .plot-wrap { position: relative; margin: 16px 22px 0; border: 1px solid #313e4c; border-radius: 16px; padding: 12px 13px 8px; background: #0b121bd9; }
+    .plot-title { display: flex; justify-content: space-between; gap: 12px; color: #dce2e6; font-size: .78rem; font-weight: 750; }
+    .plot-title span:last-child { color: var(--muted); font-weight: 500; }
+    svg { display: block; width: 100%; height: 168px; overflow: visible; }
+    .axis { stroke: #495563; stroke-width: 1; }
+    .grid { stroke: #34404d; stroke-width: 1; stroke-dasharray: 3 5; }
+    .curve { fill: none; stroke: #e4f3b5; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    .interval-a, .interval-b { fill: none; stroke-width: 7; stroke-linecap: round; opacity: .9; }
+    .interval-a { stroke: var(--cyan); }
+    .interval-b { stroke: var(--orange); }
+    .zone { fill: #84d2dc; opacity: .13; }
+    .zone-label { fill: #80d7e6; font: 700 10px system-ui, sans-serif; letter-spacing: .06em; }
+    .marker-a { stroke: var(--cyan); fill: #101923; stroke-width: 3; }
+    .marker-b { stroke: var(--orange); fill: #101923; stroke-width: 3; }
+    .plot-caption { display: flex; justify-content: space-between; color: #8793a1; font-size: .7rem; }
+    .bet-row { display: flex; justify-content: center; gap: 12px; padding: 15px 22px 20px; }
+    .bet-row button { min-width: min(220px, 50%); }
+    .bet-a { border-color: #64b7c7; }
+    .bet-b { border-color: #dc9660; }
+    .result { display: none; margin: 0 22px 18px; border: 1px solid #657d42; border-radius: 15px; padding: 14px 16px; background: #1e2a1c; animation: rise .3s ease-out; }
+    .result.show { display: block; }
+    .result.wrong { border-color: #83504b; background: #2c1e20; }
+    .result h3 { margin: 0 0 4px; color: var(--lime); font-size: 1rem; }
+    .result.wrong h3 { color: #ffb1a8; }
+    .result p { margin: 0; color: #d3dbd5; }
+    .scores { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; color: #aeb9bd; font-size: .78rem; }
+    .scores b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 22px 20px; }
+    .score-note { color: #929daa; font-size: .73rem; }
+    .science { margin-top: 18px; border: 1px solid #2d3946; border-radius: 14px; padding: 12px 15px; background: #101720aa; color: #aeb9c4; font-size: .8rem; }
+    .science summary { color: #dce3e7; font-weight: 750; cursor: pointer; }
+    .science p { margin: 9px 0 2px; }
+    .science a { color: var(--cyan); }
+    .toast { min-height: 1.4em; padding: 0 22px 12px; color: var(--lime); text-align: center; font-size: .82rem; font-weight: 700; }
+    @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 680px) { main { width: min(100% - 20px, 540px); padding-top: 15px; } header { display: block; margin-bottom: 14px; } .lede { font-size: .96rem; } .stats { margin-top: 10px; } .stat { flex: 1; } .arena { grid-template-columns: 1fr; gap: 8px; padding: 0 13px; } .jump { padding: 12px; } .range { margin-top: 8px; } .scale-hint { margin-top: 3px; } .game-head { padding: 14px 15px 12px; } .plot-title { display: grid; gap: 2px; } .plot-title span:last-child { font-size: .72rem; } .plot-wrap { margin: 13px 13px 0; } .bet-row { padding: 12px 13px 14px; } .result { margin-inline: 13px; } .actions { padding-inline: 13px; } }
+    @media (max-width: 400px) { .seed { white-space: normal; text-align: right; } .bet-row { gap: 7px; } .bet-row button { min-width: 0; flex: 1; padding-inline: 8px; } .scores { gap: 5px 11px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">A 60-second calibration game</div>
+      <h1>Calibrate the Horizon</h1>
+      <p class="lede">Two AI task-time jumps stand off. Which one means a bigger leap in capability? Set the ranges, place your bet, then see why equal time multipliers can mean different things.</p>
+    </div>
+    <div class="stats" role="group" aria-label="Game stats">
+      <div class="stat"><small>Round</small><b id="round-count">1</b></div>
+      <div class="stat"><small>Points</small><b id="points">0</b></div>
+      <div class="stat"><small>Streak</small><b id="streak">0</b></div>
+    </div>
+  </header>
+  <section class="game" aria-labelledby="challenge-title">
+    <div class="game-head">
+      <div><div class="round-label" id="round-label">Round 1 · Warm-up</div><h2 id="challenge-title">Which time jump covers more new ground?</h2></div>
+      <div class="seed" id="seed">DECK SEED 24017</div>
+    </div>
+    <div class="arena" role="group" aria-label="Compare the two time jumps">
+      <article class="jump a">
+        <div class="jump-top"><strong>Jump A</strong><span class="delta" id="delta-a">+0.00 pts</span></div>
+        <div class="range"><div class="range-label"><label for="a-start">From</label><output id="a-start-value">3 min</output></div><input id="a-start" type="range" min="0" max="8.99" step="0.01" value="1.58"></div>
+        <div class="range"><div class="range-label"><label for="a-end">To</label><output id="a-end-value">30 min</output></div><input id="a-end" type="range" min="0.01" max="9" step="0.01" value="4.91"></div>
+        <p class="scale-hint">Drag either handle to make your own comparison.</p>
+      </article>
+      <article class="jump b">
+        <div class="jump-top"><strong>Jump B</strong><span class="delta" id="delta-b">+0.00 pts</span></div>
+        <div class="range"><div class="range-label"><label for="b-start">From</label><output id="b-start-value">30 min</output></div><input id="b-start" type="range" min="0" max="8.99" step="0.01" value="4.91"></div>
+        <div class="range"><div class="range-label"><label for="b-end">To</label><output id="b-end-value">5 hr</output></div><input id="b-end" type="range" min="0.01" max="9" step="0.01" value="8.23"></div>
+        <p class="scale-hint">Equal multipliers can land on different parts of the curve.</p>
+      </article>
+    </div>
+    <div class="bet-row" role="group" aria-label="Place your bet">
+      <button class="bet-a" id="bet-a" type="button">A is the bigger leap</button>
+      <button class="bet-b" id="bet-b" type="button">B is the bigger leap</button>
+    </div>
+    <div class="plot-wrap">
+      <div class="plot-title"><span>Capability gain across task times</span><span>Illustrative curve · difficulty points</span></div>
+      <svg viewBox="0 0 800 180" role="img" aria-labelledby="chart-title chart-desc">
+        <title id="chart-title">Illustrative human-time to difficulty curve</title>
+        <desc id="chart-desc">A gently rising curve is nearly flat from 2 to 30 minutes, then rises more quickly. Colored markers show the selected jump endpoints.</desc>
+        <rect class="zone" x="112" y="18" width="321" height="126" rx="5"></rect>
+        <text class="zone-label" x="272" y="34" text-anchor="middle">FLAT ZONE · 2–30 MIN</text>
+        <line class="grid" x1="30" y1="90" x2="770" y2="90"></line><line class="axis" x1="30" y1="145" x2="770" y2="145"></line>
+        <line class="axis" x1="30" y1="18" x2="30" y2="145"></line>
+        <path class="curve" d="M30 145 C67 139 95 135 112 134 C128 132 146 129 160 128 C235 125 355 124 433 123 C505 114 552 91 598 72 C664 52 719 40 770 33"></path>
+        <g id="markers"></g>
+      </svg>
+      <div class="plot-caption"><span>1 min</span><span>Human task time →</span><span>8.5 hr</span></div>
+    </div>
+    <div class="result" id="result" aria-live="polite" aria-atomic="true">
+      <h3 id="result-title">Nice read!</h3>
+      <p id="result-copy"></p>
+      <div class="scores"><span>Forecast log loss <b id="log-score">—</b></span><span>Brier score <b id="brier-score">—</b></span><span id="answer-label">—</span></div>
+    </div>
+    <div class="toast" id="toast" aria-live="polite">First move: compare the two curves, then choose A or B.</div>
+    <div class="actions"><span class="score-note">Each bet is a 75% forecast; lower log loss and Brier are better.</span><button id="next" class="primary" type="button" hidden>Next round →</button><button id="reset" type="button">Reset game</button></div>
+  </section>
+  <details class="science">
+    <summary>About the science and this game</summary>
+    <p>Inspired by <a href="https://arxiv.org/abs/2610.12466">On the estimation and validity of AI time horizons</a> by Drew T. Nguyen and William Fithian. Their paper argues that converting human task time into AI task difficulty is not simply linear: its fitted spline is nearly flat from 2–30 minutes and closer to linear elsewhere. This game turns that insight into a comparison puzzle.</p>
+    <p>The curve here is an illustrative hand-shaped teaching curve, not a fitted estimate or the paper's METR results. It uses difficulty points with arbitrary units, no benchmark data, no model fitting, and no claim of predictive accuracy. The 75% forecast is fixed for every chosen answer so log and Brier scores can show how proper scoring rules reward calibrated forecasts. Independent educational implementation; not endorsed by the authors. No third-party code, data, weights, or assets are included.</p>
+  </details>
+</main>
+<script>
+(() => {
+  'use strict';
+  const seed = 24017;
+  const anchors = [[0, 0], [1, 0.22], [1.585, 0.32], [4.907, 0.43], [6.907, 1.42], [8.229, 1.92], [9, 2.18]];
+  const ui = Object.fromEntries(['round-count', 'points', 'streak', 'round-label', 'seed', 'a-start', 'a-end', 'b-start', 'b-end', 'a-start-value', 'a-end-value', 'b-start-value', 'b-end-value', 'delta-a', 'delta-b', 'markers', 'result', 'result-title', 'result-copy', 'log-score', 'brier-score', 'answer-label', 'toast', 'bet-a', 'bet-b', 'next', 'reset'].map((id) => [id, document.getElementById(id)]));
+  const state = { round: 1, points: 0, streak: 0, answered: false, rng: seed };
+  const formatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+  function hoursLabel(logMinutes) {
+    const mins = 2 ** logMinutes;
+    if (mins < 60) return `${formatter.format(mins)} min`;
+    const hours = mins / 60;
+    return `${formatter.format(hours)} hr${Math.abs(hours - 1) < 0.05 ? '' : 's'}`;
+  }
+  function curveAt(x) {
+    for (let i = 1; i < anchors.length; i += 1) {
+      const [x1, y1] = anchors[i - 1]; const [x2, y2] = anchors[i];
+      if (x <= x2) { const t = (x - x1) / (x2 - x1); return y1 + (y2 - y1) * t; }
+    }
+    return anchors.at(-1)[1];
+  }
+  function fmt(n) { return n.toFixed(2); }
+  function jumpDelta(prefix) {
+    return curveAt(Number(ui[`${prefix}-end`].value)) - curveAt(Number(ui[`${prefix}-start`].value));
+  }
+  function marker(x, cls) {
+    const px = 30 + (x / 9) * 740; const py = 145 - (curveAt(x) / 2.3) * 118;
+    return `<circle class="${cls}" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="5.5"></circle>`;
+  }
+  function interval(prefix, cls) {
+    const from = Number(ui[`${prefix}-start`].value); const to = Number(ui[`${prefix}-end`].value);
+    const points = Array.from({ length: 25 }, (_, i) => {
+      const x = from + (to - from) * i / 24;
+      return `${i ? 'L' : 'M'}${(30 + x / 9 * 740).toFixed(1)} ${(145 - curveAt(x) / 2.3 * 118).toFixed(1)}`;
+    });
+    return `<path class="${cls}" d="${points.join(' ')}"></path>`;
+  }
+  function update() {
+    for (const prefix of ['a', 'b']) {
+      const start = ui[`${prefix}-start`]; const end = ui[`${prefix}-end`];
+      ui[`${prefix}-start-value`].textContent = hoursLabel(Number(start.value));
+      ui[`${prefix}-end-value`].textContent = hoursLabel(Number(end.value));
+      ui[`delta-${prefix}`].textContent = `+${fmt(jumpDelta(prefix))} pts`;
+    }
+    ui.markers.innerHTML = interval('a', 'interval-a') + interval('b', 'interval-b') + marker(Number(ui['a-start'].value), 'marker-a') + marker(Number(ui['a-end'].value), 'marker-a') + marker(Number(ui['b-start'].value), 'marker-b') + marker(Number(ui['b-end'].value), 'marker-b');
+  }
+  function clampPair(prefix, changedId) {
+    const start = ui[`${prefix}-start`]; const end = ui[`${prefix}-end`]; const step = 0.01;
+    if (changedId === start.id && Number(start.value) >= Number(end.value)) end.value = String(Math.min(Number(end.max), Number(start.value) + step));
+    if (changedId === end.id && Number(end.value) <= Number(start.value)) start.value = String(Math.max(Number(start.min), Number(end.value) - step));
+  }
+  function makeRng() {
+    state.rng = (state.rng * 1664525 + 1013904223) >>> 0;
+    return state.rng / 4294967296;
+  }
+  function showSeed() { ui.seed.textContent = `DECK SEED ${seed}`; }
+  function setRound(round) {
+    state.round = round; state.answered = false;
+    if (round === 1) {
+      ui['a-start'].value = '1.58'; ui['a-end'].value = '4.91'; ui['b-start'].value = '4.91'; ui['b-end'].value = '8.23';
+      ui['round-label'].textContent = 'Round 1 · Warm-up'; ui.toast.textContent = 'First move: compare the two curves, then choose A or B.';
+    } else {
+      const starts = [0, 1, 1.5, 2, 3, 4, 4.75, 5.5, 6];
+      let a0 = starts[Math.floor(makeRng() * starts.length)]; let a1 = Math.min(9, a0 + 1.5 + makeRng() * 2.25);
+      let b0 = starts[Math.floor(makeRng() * starts.length)]; let b1 = Math.min(9, b0 + 1.5 + makeRng() * 2.25);
+      if (a1 <= a0) a1 = a0 + 0.01; if (b1 <= b0) b1 = b0 + 0.01;
+      ui['a-start'].value = (Math.round(a0 * 100) / 100).toFixed(2); ui['a-end'].value = (Math.round(a1 * 100) / 100).toFixed(2);
+      ui['b-start'].value = (Math.round(b0 * 100) / 100).toFixed(2); ui['b-end'].value = (Math.round(b1 * 100) / 100).toFixed(2);
+      ui['round-label'].textContent = `Round ${round} · New comparison`;
+      ui.toast.textContent = 'A fresh pair is ready. Compare the rises, then place your bet.';
+    }
+    showSeed(); ui.result.classList.remove('show', 'wrong'); ui.next.hidden = true;
+    ui['bet-a'].disabled = false; ui['bet-b'].disabled = false; ui['round-count'].textContent = String(round); update();
+  }
+  function score(choice) {
+    if (state.answered) return;
+    const da = jumpDelta('a'); const db = jumpDelta('b');
+    if (Math.abs(da - db) < 0.005) { ui.toast.textContent = 'These jumps are even. Nudge a time slider to make a clear comparison.'; return; }
+    state.answered = true;
+    const trueAnswer = da >= db ? 'a' : 'b'; const correct = choice === trueAnswer;
+    const pA = choice === 'a' ? 0.75 : 0.25; const actual = trueAnswer === 'a' ? 1 : 0;
+    const logLoss = -Math.log(actual ? pA : 1 - pA); const brier = (pA - actual) ** 2 + ((1 - pA) - (1 - actual)) ** 2;
+    state.streak = correct ? state.streak + 1 : 0; state.points += correct ? 100 + Math.min(100, (state.streak - 1) * 25) : 0;
+    ui.points.textContent = String(state.points); ui.streak.textContent = String(state.streak);
+    ui['result-title'].textContent = correct ? (state.streak > 1 ? `${state.streak} in a row!` : 'Nice read!') : 'Not this time';
+    ui['result-copy'].textContent = `Jump ${trueAnswer.toUpperCase()} adds ${fmt(trueAnswer === 'a' ? da : db)} difficulty points; Jump ${trueAnswer === 'a' ? 'B' : 'A'} adds ${fmt(trueAnswer === 'a' ? db : da)}. ${correct ? 'You called the larger gain.' : 'The curve turned out to favor the other jump.'}`;
+    ui['log-score'].textContent = `${fmt(logLoss)} nats`;
+    ui['brier-score'].textContent = fmt(brier);
+    ui['answer-label'].textContent = `Your ${choice.toUpperCase()} forecast: ${correct ? 'right' : 'miss'}`;
+    ui.result.classList.add('show'); ui.result.classList.toggle('wrong', !correct);
+    ui['bet-a'].disabled = true; ui['bet-b'].disabled = true; ui.next.hidden = false;
+    ui.toast.textContent = correct ? `+${100 + Math.min(100, (state.streak - 1) * 25)} points · keep the streak alive.` : 'No points this round · reset or try the next comparison.';
+  }
+  for (const id of ['a-start', 'a-end', 'b-start', 'b-end']) ui[id].addEventListener('input', () => { clampPair(id[0], id); update(); });
+  ui['bet-a'].addEventListener('click', () => score('a'));
+  ui['bet-b'].addEventListener('click', () => score('b'));
+  ui.next.addEventListener('click', () => setRound(state.round + 1));
+  ui.reset.addEventListener('click', () => { state.round = 1; state.points = 0; state.streak = 0; state.rng = seed; ui.points.textContent = '0'; ui.streak.textContent = '0'; setRound(1); ui.toast.textContent = 'Fresh start. Compare the two gains and make your call.'; });
+  setRound(1);
+})();
+</script>
+</body>
+</html>
